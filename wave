@@ -1,0 +1,78 @@
+--Q1 to count the number of users wave has
+SELECT COUNT (*) FROM users;
+
+--Q2 to count how many transactions have been sent in the currency CFA
+SELECT COUNT (transfer_id) FROM transfers WHERE send_amount_currency ='CFA';
+
+
+--Q3 to count how many transactions have been sent in the currency CFA
+SELECT COUNT (u_id) FROM transfers WHERE send_amount_currency ='CFA';
+
+
+-- Q4 to count the number agent transactions per month in 2018
+SELECT EXTRACT(MONTH FROM when_created) AS tx_month,COUNT(atx_id) AS agent_tx_count
+FROM agent_transactions			   
+WHERE
+EXTRACT(YEAR FROM when_created) = 2018 
+GROUP BY 
+EXTRACT(MONTH FROM when_created);
+
+
+--Q5 to determine the number of net depositors and net withdrawers
+SELECT SUM( case 
+		    when amount<0 then 1
+		      else 0
+		    end) AS "number_of_net_depositors",
+		SUM( case 
+		    when amount>0 then 1
+		      else 0
+		    end) AS "number_of_net_withdrawers"
+FROM agent_transactions
+WHERE(when_created>= DATE_TRUNC('week',CURRENT_TIMESTAMP-interval'1 week'))
+AND(when_created<DATE_TRUNC('week',CURRENT_TIMESTAMP));
+
+
+--Q6 atx volume city summary
+SELECT SUM(agent_transactions.amount) AS transaction_volume, agents.city AS agent_city
+FROM agent_transactions,agents
+WHERE(agent_transactions.when_created >= DATE_TRUNC('week',CURRENT_TIMESTAMP-interval'1 week'))
+AND(agent_transactions.when_created<DATE_TRUNC('week',CURRENT_TIMESTAMP))
+GROUP BY agents.city;
+
+--Q7 atx volume by country
+SELECT SUM(agent_transactions.amount) AS transaction_volume, agents.city AS agent_city,agents.country AS agent_country
+FROM agent_transactions,agents
+WHERE(agent_transactions.when_created >= DATE_TRUNC('week',CURRENT_TIMESTAMP-interval'1 week'))
+AND(agent_transactions.when_created<DATE_TRUNC('week',CURRENT_TIMESTAMP))
+GROUP BY agents.country,agents.city;
+
+--Q8
+SELECT SUM(transfers.send_amount_scalar) AS volume,wallets.ledger_location AS country,transfers.kind AS transfer_kind 
+FROM transfers,wallets,agent_transactions
+WHERE(agent_transactions.when_created >= DATE_TRUNC('week',CURRENT_TIMESTAMP-interval'1 week'))
+AND(agent_transactions.when_created<DATE_TRUNC('week',CURRENT_TIMESTAMP))
+GROUP BY transfers.kind,wallets.ledger_location;
+
+
+--Q9 to add columns for transaction counts and number of unique senders
+SELECT SUM(transfers.send_amount_scalar) AS volume,wallets.ledger_location AS country,transfers.kind AS transfer_kind,
+COUNT (atx_id) AS transaction_count,COUNT (transfers.u_id) AS unique_senders
+FROM transfers,wallets,agent_transactions
+WHERE(agent_transactions.when_created >= DATE_TRUNC('week',CURRENT_TIMESTAMP-interval'1 week'))
+AND(agent_transactions.when_created<DATE_TRUNC('week',CURRENT_TIMESTAMP))
+GROUP BY transfers.kind,wallets.ledger_location;
+
+
+--Q10 wallets that have more than 10000000
+SELECT transfers.source_wallet_id,send_amount_scalar as amount_sent
+FROM transfers
+WHERE send_amount_scalar>10000000
+AND send_amount_currency = 'CFA';
+
+			
+
+
+
+
+
+
